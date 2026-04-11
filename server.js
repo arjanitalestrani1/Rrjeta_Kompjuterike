@@ -1,18 +1,13 @@
 const net = require('net');
 
+const HOST = '127.0.0.1';
+const PORT = 5000;
+
 const server = net.createServer((socket) => {
-    console.log('Client connected');
-
-    socket.on('data', (data) => {
-        console.log('Message:', data.toString());
-        socket.write('OK');
-    });
-
-    socket.on('end', () => {
-        console.log('Client disconnected');
-    });
+    console.log('Klienti u lidh');
 });
 
-server.listen(5000, () => {
-    console.log('Server running on port 5000');
+server.listen(PORT, HOST, () => {
+    console.log(`Serveri eshte duke punu ne ${HOST}:${PORT}`);
 });
+
