@@ -5,6 +5,7 @@ const PORT = 5000;
 const MAX_CLIENTS = 4;
 
 let clients = [];
+let messages = [];
 
 const server = net.createServer((socket) => {
     const clientId = `${socket.remoteAddress}:${socket.remotePort}`;
@@ -22,6 +23,21 @@ const server = net.createServer((socket) => {
 
     console.log(`Klienti u lidh: ${clientId}`);
     console.log(`Kliente aktiv: ${clients.length}`);
+
+    socket.on('data', (data) => {
+        const text = data.toString().trim();
+
+        const messageObject = {
+            clientId: clientId,
+            message: text,
+            time: new Date().toLocaleString()
+        };
+
+        messages.push(messageObject);
+
+        console.log(`Mesazh nga ${clientId}: ${text}`);
+        socket.write(`Serveri e pranoi mesazhin: ${text}\n`);
+    });
 });
 
 server.listen(PORT, HOST, () => {
