@@ -24,4 +24,4 @@ socket.on('data', (data) => {
     }
 
     console.log(`Mesazh nga ${socket.remoteAddress}:${socket.remotePort} -> ${text}`);
-});
+ });
