@@ -130,6 +130,7 @@ server.listen(PORT, HOST, () => {
 
 server.listen(PORT, HOST, () => {
     console.log(`Serveri eshte duke punu ne ${HOST}:${PORT}`);
+<<<<<<< HEAD
 });
 
 
@@ -138,3 +139,6 @@ server.listen(PORT, HOST, () => {
 
 
 >>>>>>> c868966 (Updated server commands and client handling)
+=======
+    
+>>>>>>> 70a9936 (Updated server commands and client handling)
