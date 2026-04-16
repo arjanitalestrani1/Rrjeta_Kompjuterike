@@ -1,8 +1,5 @@
 const net = require('net');
-<<<<<<< HEAD
-=======
 const commands = require('./fileCommands');
->>>>>>> c868966 (Updated server commands and client handling)
 
 const HOST = '127.0.0.1';
 const PORT = 5000;
@@ -18,12 +15,9 @@ const removeClient = (clientId) => {
 
 const server = net.createServer((socket) => {
     const clientId = `${socket.remoteAddress}:${socket.remotePort}`;
-<<<<<<< HEAD
 
     if (clients.length >= MAX_CLIENTS) {
-=======
 if (clients.length >= MAX_CLIENTS) {
->>>>>>> c868966 (Updated server commands and client handling)
         socket.write('Serveri eshte full.\n');
         socket.end();
         return;
@@ -41,7 +35,6 @@ if (clients.length >= MAX_CLIENTS) {
 
     socket.on('data', (data) => {
         const text = data.toString().trim();
-<<<<<<< HEAD
 
         const messageObject = {
             clientId: clientId,
@@ -57,7 +50,6 @@ if (clients.length >= MAX_CLIENTS) {
 
     socket.on('timeout', () => {
         console.log(`Klienti ${clientId} u shkeput nga timeout.`);
-=======
         const [cmd, ...args] = text.split(' ');
 
         if (cmd === '/list') {
@@ -93,7 +85,6 @@ else if (cmd === '/read') {
 
     socket.on('timeout', () => {
         console.log(`Klienti ${clientId} u shkep nga timeout.`);
->>>>>>> c868966 (Updated server commands and client handling)
         socket.end();
     });
 
@@ -101,7 +92,7 @@ else if (cmd === '/read') {
         console.log(`Klienti doli: ${clientId}`);
         removeClient(clientId);
         console.log(`Kliente aktiv: ${clients.length}`);
-<<<<<<< HEAD
+< HEAD
     });
 
     socket.on('close', () => {
@@ -130,15 +121,9 @@ server.listen(PORT, HOST, () => {
 
 server.listen(PORT, HOST, () => {
     console.log(`Serveri eshte duke punu ne ${HOST}:${PORT}`);
-<<<<<<< HEAD
+ HEAD
 });
 
 
 
 
-
-
->>>>>>> c868966 (Updated server commands and client handling)
-=======
-    
->>>>>>> 70a9936 (Updated server commands and client handling)
