@@ -25,3 +25,29 @@ socket.on('data', (data) => {
 
     console.log(`Mesazh nga ${socket.remoteAddress}:${socket.remotePort} -> ${text}`);
 });
+else if (cmd === "/upload") {
+    const filename = args[0];
+    const content = args.slice(1).join(" ");
+
+    const filePath = path.join(__dirname, "files", filename);
+
+    fs.writeFile(filePath, content, (err) => {
+        if (err) {
+            socket.write("Gabim gjatë ngarkimit të file-it.\n");
+        } else {
+            socket.write("File u ngarkua me sukses.\n");
+        }
+    });
+}
+
+else if (cmd === "/download") {
+    const filePath = path.join(__dirname, "files", args[0]);
+
+    fs.readFile(filePath, "utf8", (err, data) => {
+        if (err) {
+            socket.write("File nuk u gjet.\n");
+        } else {
+            socket.write(`Përmbajtja e file-it:\n${data}`);
+        }
+    });
+}
