@@ -2,7 +2,7 @@ const net = require('net');
 const http = require('http');
 const commands = require('./fileCommands');
 
-const HOST = '127.0.0.1'; 
+const HOST = '127.0.0.1';
 const PORT = 5000;
 const HTTP_PORT = 8080;
 const MAX_CLIENTS = 4;
@@ -34,9 +34,6 @@ const server = net.createServer((socket) => {
 
     clients.push(clientObj);
 
-    console.log(`Klienti u lidh: ${clientId} (${role})`);
-    console.log(`Kliente aktiv: ${clients.length}`);
-
     socket.write(`Miresevini! Ju jeni: ${role}\n`);
 
     socket.setTimeout(TIMEOUT);
@@ -51,128 +48,112 @@ const server = net.createServer((socket) => {
 
         const [cmd, ...args] = text.split(' ');
 
-     
-        // ADMIN COMMANDS
-     
-        if ([
-            '/list',
-            '/read',
-            '/upload',
-            '/download',
-            '/delete',
-            '/info',
-            '/search'
-        ].includes(cmd)) {
-
-            if (clientObj.role !== 'admin') {
-                socket.write('Nuk keni leje per kete komande.\n');
-                return;
-            }
+        const execute = () => {
 
             if (cmd === '/list') {
-                commands.listFiles(socket);
+                return commands.listFiles(socket);
             }
 
-            else if (cmd === '/read') {
+            if (cmd === '/read') {
                 if (!args[0]) {
-                    socket.write('Perdorimi: /read emriFile\n');
+                    socket.write('Perdorimi: /read filename\n');
                 } else {
                     commands.readFile(socket, args[0]);
                 }
+                return;
             }
 
-            else if (cmd === '/upload') {
-                if (!args[0]) {
-                    socket.write('Perdorimi: /upload emriFile permbajtja\n');
-                } else {
+            if ([
+                '/upload',
+                '/download',
+                '/delete',
+                '/info',
+                '/search'
+            ].includes(cmd)) {
+
+                if (clientObj.role !== 'admin') {
+                    socket.write('Nuk keni leje per kete komande.\n');
+                    return;
+                }
+
+                if (cmd === '/upload') {
                     const filename = args[0];
                     const content = args.slice(1).join(' ');
 
-                    if (!content) {
-                        socket.write('Gabim: mungon permbajtja e file-it per upload.\n');
+                    if (!filename || !content) {
+                        socket.write('Perdorimi: /upload filename content\n');
                     } else {
                         commands.uploadFile(socket, filename, content);
                     }
                 }
-            }
 
-            else if (cmd === '/download') {
-                if (!args[0]) {
-                    socket.write('Perdorimi: /download emriFile\n');
-                } else {
-                    commands.downloadFile(socket, args[0]);
+                else if (cmd === '/download') {
+                    if (!args[0]) {
+                        socket.write('Perdorimi: /download filename\n');
+                    } else {
+                        commands.downloadFile(socket, args[0]);
+                    }
                 }
-            }
 
-            else if (cmd === '/delete') {
-                if (!args[0]) {
-                    socket.write('Perdorimi: /delete emriFile\n');
-                } else {
-                    commands.deleteFile(socket, args[0]);
+                else if (cmd === '/delete') {
+                    if (!args[0]) {
+                        socket.write('Perdorimi: /delete filename\n');
+                    } else {
+                        commands.deleteFile(socket, args[0]);
+                    }
                 }
-            }
 
-            else if (cmd === '/info') {
-                if (!args[0]) {
-                    socket.write('Perdorimi: /info emriFile\n');
-                } else {
-                    commands.fileInfo(socket, args[0]);
+                else if (cmd === '/info') {
+                    if (!args[0]) {
+                        socket.write('Perdorimi: /info filename\n');
+                    } else {
+                        commands.fileInfo(socket, args[0]);
+                    }
                 }
-            }
 
-            else if (cmd === '/search') {
-                if (!args[0]) {
-                    socket.write('Perdorimi: /search keyword\n');
-                } else {
-                    commands.searchFile(socket, args.join(' '));
+                else if (cmd === '/search') {
+                    if (!args[0]) {
+                        socket.write('Perdorimi: /search keyword\n');
+                    } else {
+                        commands.searchFiles(socket, args.join(' '));
+                    }
                 }
+
+                return;
             }
 
-            return;
-        }
+            const messageObject = {
+                clientId: clientId,
+                role: clientObj.role,
+                message: text,
+                time: new Date().toLocaleString()
+            };
 
-        
-        // NORMAL MESSAGE
-        
-        const messageObject = {
-            clientId: clientId,
-            role: clientObj.role,
-            message: text,
-            time: new Date().toLocaleString()
+            messages.push(messageObject);
+
+            socket.write(`Serveri e pranoi mesazhin: ${text}\n`);
         };
 
-        messages.push(messageObject);
-
-        console.log(`Mesazh nga ${clientId}: ${text}`);
-        socket.write(`Serveri e pranoi mesazhin: ${text}\n`);
+        if (clientObj.role === 'admin') {
+            execute();
+        } else {
+            setTimeout(execute, 2000);
+        }
     });
 
     socket.on('timeout', () => {
-        console.log(`Klienti ${clientId} u shkeput nga timeout.`);
         socket.write('Lidhja u mbyll per shkak te mosaktivitetit.\n');
         socket.end();
     });
 
-    socket.on('end', () => {
-        console.log(`Klienti doli: ${clientId}`);
-    });
-
     socket.on('close', () => {
         removeClient(clientId);
-        console.log(`Lidhja u mbyll: ${clientId}`);
-        console.log(`Kliente aktiv: ${clients.length}`);
     });
 
-    socket.on('error', (err) => {
-        console.log(`Gabim nga ${clientId}: ${err.message}`);
-    });
+    socket.on('error', () => {});
 });
 
-server.listen(PORT, HOST, () => {
-    console.log(`TCP serveri eshte duke punu ne ${HOST}:${PORT}`);
-});
-
-// HTTP SERVER FOR /stats
+server.listen(PORT, HOST);
 
 http.createServer((req, res) => {
     if (req.method === 'GET' && req.url === '/stats') {
@@ -183,11 +164,9 @@ http.createServer((req, res) => {
             clientIPs: clients.map(c => c.id),
             totalMessages: messages.length,
             messages: messages
-        }, null, 2));
+        }));
     } else {
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.writeHead(404);
         res.end('Not Found');
     }
-}).listen(HTTP_PORT, () => {
-    console.log(`HTTP serveri eshte aktiv ne portin ${HTTP_PORT}`);
-});
+}).listen(HTTP_PORT);
