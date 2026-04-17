@@ -28,8 +28,7 @@ const server = net.createServer((socket) => {
 
     const clientObj = {
         id: clientId,
-        role: role,
-        connectedAt: new Date()
+        role: role
     };
 
     clients.push(clientObj);
@@ -63,62 +62,61 @@ const server = net.createServer((socket) => {
                 return;
             }
 
-            if ([
-                '/upload',
-                '/download',
-                '/delete',
-                '/info',
-                '/search'
-            ].includes(cmd)) {
+            if (cmd === '/upload') {
+                if (clientObj.role !== 'admin') return socket.write('Nuk keni leje.\n');
 
-                if (clientObj.role !== 'admin') {
-                    socket.write('Nuk keni leje per kete komande.\n');
-                    return;
+                const filename = args[0];
+                const content = args.slice(1).join(' ');
+
+                if (!filename || !content) {
+                    socket.write('Perdorimi: /upload filename content\n');
+                } else {
+                    commands.uploadFile(socket, filename, content);
                 }
+                return;
+            }
 
-                if (cmd === '/upload') {
-                    const filename = args[0];
-                    const content = args.slice(1).join(' ');
+            if (cmd === '/download') {
+                if (clientObj.role !== 'admin') return socket.write('Nuk keni leje.\n');
 
-                    if (!filename || !content) {
-                        socket.write('Perdorimi: /upload filename content\n');
-                    } else {
-                        commands.uploadFile(socket, filename, content);
-                    }
+                if (!args[0]) {
+                    socket.write('Perdorimi: /download filename\n');
+                } else {
+                    commands.downloadFile(socket, args[0]);
                 }
+                return;
+            }
 
-                else if (cmd === '/download') {
-                    if (!args[0]) {
-                        socket.write('Perdorimi: /download filename\n');
-                    } else {
-                        commands.downloadFile(socket, args[0]);
-                    }
+            if (cmd === '/delete') {
+                if (clientObj.role !== 'admin') return socket.write('Nuk keni leje.\n');
+
+                if (!args[0]) {
+                    socket.write('Perdorimi: /delete filename\n');
+                } else {
+                    commands.deleteFile(socket, args[0]);
                 }
+                return;
+            }
 
-                else if (cmd === '/delete') {
-                    if (!args[0]) {
-                        socket.write('Perdorimi: /delete filename\n');
-                    } else {
-                        commands.deleteFile(socket, args[0]);
-                    }
+            if (cmd === '/info') {
+                if (clientObj.role !== 'admin') return socket.write('Nuk keni leje.\n');
+
+                if (!args[0]) {
+                    socket.write('Perdorimi: /info filename\n');
+                } else {
+                    commands.fileInfo(socket, args[0]);
                 }
+                return;
+            }
 
-                else if (cmd === '/info') {
-                    if (!args[0]) {
-                        socket.write('Perdorimi: /info filename\n');
-                    } else {
-                        commands.fileInfo(socket, args[0]);
-                    }
+            if (cmd === '/search') {
+                if (clientObj.role !== 'admin') return socket.write('Nuk keni leje.\n');
+
+                if (!args[0]) {
+                    socket.write('Perdorimi: /search keyword\n');
+                } else {
+                    commands.searchFiles(socket, args.join(' '));
                 }
-
-                else if (cmd === '/search') {
-                    if (!args[0]) {
-                        socket.write('Perdorimi: /search keyword\n');
-                    } else {
-                        commands.searchFiles(socket, args.join(' '));
-                    }
-                }
-
                 return;
             }
 
