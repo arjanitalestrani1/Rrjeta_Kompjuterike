@@ -15,9 +15,8 @@ const removeClient = (clientId) => {
 
 const server = net.createServer((socket) => {
     const clientId = `${socket.remoteAddress}:${socket.remotePort}`;
-
-    
-if (clients.length >= MAX_CLIENTS) {
+   
+    if (clients.length >= MAX_CLIENTS) {
         socket.write('Serveri eshte full.\n');
         socket.end();
         return;
@@ -35,27 +34,12 @@ if (clients.length >= MAX_CLIENTS) {
 
     socket.on('data', (data) => {
         const text = data.toString().trim();
-
-        const messageObject = {
-            clientId: clientId,
-            message: text,
-            time: new Date().toLocaleString()
-        };
-
-        messages.push(messageObject);
-
-        console.log(`Mesazh nga ${clientId}: ${text}`);
-        socket.write(`Serveri e pranoi mesazhin: ${text}\n`);
-    });
-
-    socket.on('timeout', () => {
-        console.log(`Klienti ${clientId} u shkeput nga timeout.`);
         const [cmd, ...args] = text.split(' ');
 
         if (cmd === '/list') {
             commands.listFiles(socket);
         } 
-else if (cmd === '/read') {
+        else if (cmd === '/read') {
             if (!args[0]) {
                 socket.write('Perdorimi: /read emriFile\n');
             } else {
@@ -84,9 +68,10 @@ else if (cmd === '/read') {
     });
 
     socket.on('timeout', () => {
-        console.log(`Klienti ${clientId} u shkep nga timeout.`);
-        socket.end();
+        console.log(`Klienti ${clientId} u shkeput nga timeout.`);
+        socket.end()
     });
+
 
     socket.on('end', () => {
         console.log(`Klienti doli: ${clientId}`);
@@ -121,12 +106,11 @@ http.createServer((req, res) => {
             totalMessages: messages.length,
             messages: messages
             }, null, 2));
-    
     }
     else {
         res.writeHead(404);
         res.end("Not Found");
     }
 }).listen(PORT2, () => {
-    console.log(`HTTP serveri eshte aktiv dhe duke funksionuar ne portin ${PORT2}`);
+    console.log(`HTTP serveri eshte aktiv ne portin ${PORT2}`);
 });
