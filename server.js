@@ -106,3 +106,22 @@ else if (cmd === '/read') {
 server.listen(PORT, HOST, () => {
     console.log(`Serveri eshte duke punu ne ${HOST}:${PORT}`);
 });
+
+const http = require('http');
+const PORT2 = 8080;
+
+http.createServer((req, res) => {
+    if (req.url === '/stats') {
+        res.writeHead(200, {'Content-Type': 'application/json'});
+
+        res.end(JSON.stringify({
+            connectedClients: clients.length,
+            totalMessages: messages.length
+        }));
+    } else {
+        res.writeHead(404);
+        res.end("Not Found");
+    }
+}).listen(PORT2, () => {
+    console.log(`HTTP serveri eshte aktiv dhe duke funksionuar ne portin ${PORT2}`);
+});
