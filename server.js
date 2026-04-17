@@ -114,11 +114,16 @@ http.createServer((req, res) => {
     if (req.url === '/stats') {
         res.writeHead(200, {'Content-Type': 'application/json'});
 
-        res.end(JSON.stringify({
-            connectedClients: clients.length,
-            totalMessages: messages.length
-        }));
-    } else {
+        res.end(
+            JSON.stringify({
+            activeClients: clients.length,
+            clientIPs: clients.map(c => c.id),
+            totalMessages: messages.length,
+            messages: messages
+            }, null, 2));
+    
+    }
+    else {
         res.writeHead(404);
         res.end("Not Found");
     }
