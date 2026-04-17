@@ -16,7 +16,7 @@ const removeClient = (clientId) => {
 const server = net.createServer((socket) => {
     const clientId = `${socket.remoteAddress}:${socket.remotePort}`;
 
-    if (clients.length >= MAX_CLIENTS) {
+    
 if (clients.length >= MAX_CLIENTS) {
         socket.write('Serveri eshte full.\n');
         socket.end();
@@ -92,7 +92,6 @@ else if (cmd === '/read') {
         console.log(`Klienti doli: ${clientId}`);
         removeClient(clientId);
         console.log(`Kliente aktiv: ${clients.length}`);
-< HEAD
     });
 
     socket.on('close', () => {
@@ -107,23 +106,27 @@ else if (cmd === '/read') {
 server.listen(PORT, HOST, () => {
     console.log(`Serveri eshte duke punu ne ${HOST}:${PORT}`);
 });
-=======
+
+const http = require('http');
+const PORT2 = 8080;
+
+http.createServer((req, res) => {
+    if (req.url === '/stats') {
+        res.writeHead(200, {'Content-Type': 'application/json'});
+
+        res.end(
+            JSON.stringify({
+            activeClients: clients.length,
+            clientIPs: clients.map(c => c.id),
+            totalMessages: messages.length,
+            messages: messages
+            }, null, 2));
+    
+    }
+    else {
+        res.writeHead(404);
+        res.end("Not Found");
+    }
+}).listen(PORT2, () => {
+    console.log(`HTTP serveri eshte aktiv dhe duke funksionuar ne portin ${PORT2}`);
 });
-
-    socket.on('close', () => {
-        removeClient(clientId);
-    });
-
-    socket.on('error', (err) => {
-        console.log(`Gabim nga ${clientId}: ${err.message}`);
-    });
-});
-
-server.listen(PORT, HOST, () => {
-    console.log(`Serveri eshte duke punu ne ${HOST}:${PORT}`);
- HEAD
-});
-
-
-
-
