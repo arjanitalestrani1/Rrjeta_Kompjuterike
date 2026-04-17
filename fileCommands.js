@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 const fs = require("fs");
 const path = require("path");
 
@@ -8,10 +7,10 @@ const FILES_DIR = path.join(__dirname, "files");
 function listFiles(socket) {
     fs.readdir(FILES_DIR, (err, files) => {
         if (err) {
-            socket.write("Error reading directory");
+            socket.write("Gabim gjatë leximit të folderit\n");
             return;
         }
-        socket.write("FILES:\n" + files.join("\n"));
+        socket.write("FILET NË SERVER:\n" + files.join("\n") + "\n");
     });
 }
 
@@ -21,10 +20,10 @@ function readFile(socket, filename) {
 
     fs.readFile(filePath, "utf8", (err, data) => {
         if (err) {
-            socket.write("File not found");
+            socket.write("File nuk u gjet\n");
             return;
         }
-        socket.write("CONTENT:\n" + data);
+        socket.write("PËRMBAJTJA E FILE-IT:\n" + data + "\n");
     });
 }
 
@@ -34,58 +33,10 @@ function deleteFile(socket, filename) {
 
     fs.unlink(filePath, (err) => {
         if (err) {
-            socket.write("Error deleting file");
+            socket.write("Gabim gjatë fshirjes së file-it\n");
             return;
         }
-        socket.write("File deleted successfully");
-    });
-}
-
-module.exports = {
-    listFiles,
-    readFile,
-    deleteFile,
-};
-=======
-const fs = require("fs");
-const path = require("path");
-
-const FILES_DIR = path.join(__dirname, "files");
-
-// LIST FILES
-function listFiles(socket) {
-    fs.readdir(FILES_DIR, (err, files) => {
-        if (err) {
-            socket.write("Gabim gjatë leximit të folderit");
-            return;
-        }
-        socket.write("FILET NË SERVER:\n" + files.join("\n"));
-    });
-}
-
-// READ FILE
-function readFile(socket, filename) {
-    const filePath = path.join(FILES_DIR, filename);
-
-    fs.readFile(filePath, "utf8", (err, data) => {
-        if (err) {
-            socket.write("File nuk u gjet");
-            return;
-        }
-        socket.write("PËRMBAJTJA E FILE-IT:\n" + data);
-    });
-}
-
-// DELETE FILE
-function deleteFile(socket, filename) {
-    const filePath = path.join(FILES_DIR, filename);
-
-    fs.unlink(filePath, (err) => {
-        if (err) {
-            socket.write("Gabim gjatë fshirjes së file-it");
-            return;
-        }
-        socket.write("File u fshi me sukses");
+        socket.write("File u fshi me sukses\n");
     });
 }
 
@@ -95,7 +46,7 @@ function fileInfo(socket, filename) {
 
     fs.stat(filePath, (err, stats) => {
         if (err) {
-            socket.write("File nuk u gjet");
+            socket.write("File nuk u gjet\n");
             return;
         }
 
@@ -103,7 +54,7 @@ function fileInfo(socket, filename) {
             `INFORMACIONI I FILE-IT:
 Madhësia: ${stats.size} bytes
 Krijuar: ${stats.birthtime}
-Modifikuar: ${stats.mtime}`
+Modifikuar: ${stats.mtime}\n`
         );
     });
 }
@@ -112,16 +63,16 @@ Modifikuar: ${stats.mtime}`
 function searchFile(socket, keyword) {
     fs.readdir(FILES_DIR, (err, files) => {
         if (err) {
-            socket.write("Gabim gjatë leximit të folderit");
+            socket.write("Gabim gjatë leximit të folderit\n");
             return;
         }
 
         const result = files.filter(file => file.includes(keyword));
 
         if (result.length === 0) {
-            socket.write("Nuk u gjet asnjë file me këtë fjalë");
+            socket.write("Nuk u gjet asnjë file me këtë fjalë\n");
         } else {
-            socket.write("REZULTATET E KËRKIMIT:\n" + result.join("\n"));
+            socket.write("REZULTATET E KËRKIMIT:\n" + result.join("\n") + "\n");
         }
     });
 }
@@ -133,5 +84,3 @@ module.exports = {
     fileInfo,
     searchFile
 };
-
->>>>>>> 840672d (save local changes)
