@@ -16,64 +16,75 @@ const removeClient = (clientId) => {
 const server = net.createServer((socket) => {
     const clientId = `${socket.remoteAddress}:${socket.remotePort}`;
 
-    
-if (clients.length >= MAX_CLIENTS) {
+    if (clients.length >= MAX_CLIENTS) {
         socket.write('Serveri eshte full.\n');
         socket.end();
         return;
     }
+    const role = clients.length === 0 ? 'admin' : 'user';
 
-    clients.push({
+    const clientObj = {
         id: clientId,
+        role: role,
         connectedAt: new Date()
-    });
+    };
+    clients.push(clientObj);
 
-    console.log(`Klienti u lidh: ${clientId}`);
+    console.log(`Klienti u lidh: ${clientId}(${role})`);
     console.log(`Kliente aktiv: ${clients.length}`);
+
+    socket.write(`Miresevini! Ju jeni: ${role}\n`);
 
     socket.setTimeout(TIMEOUT);
 
     socket.on('data', (data) => {
         const text = data.toString().trim();
-
-        const messageObject = {
-            clientId: clientId,
-            message: text,
-            time: new Date().toLocaleString()
-        };
-
-        messages.push(messageObject);
-
-        console.log(`Mesazh nga ${clientId}: ${text}`);
-        socket.write(`Serveri e pranoi mesazhin: ${text}\n`);
-    });
-
-    socket.on('timeout', () => {
-        console.log(`Klienti ${clientId} u shkeput nga timeout.`);
         const [cmd, ...args] = text.split(' ');
 
-        if (cmd === '/list') {
-            commands.listFiles(socket);
-        } 
-else if (cmd === '/read') {
-            if (!args[0]) {
-                socket.write('Perdorimi: /read emriFile\n');
-            } else {
-                commands.readFile(socket, args[0]);
+        if (['/list', '/read', '/delete', '/info', '/search'].includes(cmd)) {
+
+            if (clientObj.role !== 'admin') {
+                socket.write("Nuk keni leje per kete komande\n");
+                return;
             }
-        } 
-        else if (cmd === '/delete') {
-            if (!args[0]) {
-                socket.write('Perdorimi: /delete emriFile\n');
-            } else {
-                commands.deleteFile(socket, args[0]);
+
+            if (cmd === '/list') {
+                commands.listFiles(socket);
             }
-        } 
+            else if (cmd === '/read') {
+                if (!args[0]) {
+                    socket.write('Perdorimi: /read emriFile\n');
+                } else {
+                    commands.readFile(socket, args[0]);
+                }
+            }
+            else if (cmd === '/delete') {
+                if (!args[0]) {
+                    socket.write('Perdorimi: /delete emriFile\n');
+                } else {
+                    commands.deleteFile(socket, args[0]);
+                }
+            }
+            else if (cmd === '/info') {
+                if (!args[0]) {
+                    socket.write('Perdorimi: /info emriFile\n');
+                } else {
+                    commands.fileInfo(socket, args[0]);
+                }
+            }
+            else if (cmd === '/search') {
+                if (!args[0]) {
+                    socket.write('Perdorimi: /search keyword\n');
+                } else {
+                    commands.searchFile(socket, args[0]);
+                }
+            }
+        }
         else {
             const messageObject = {
                 clientId: clientId,
                 message: text,
-            time: new Date().toLocaleString()
+                time: new Date().toLocaleString()
             };
 
             messages.push(messageObject);
@@ -84,9 +95,10 @@ else if (cmd === '/read') {
     });
 
     socket.on('timeout', () => {
-        console.log(`Klienti ${clientId} u shkep nga timeout.`);
-        socket.end();
+        console.log(`Klienti ${clientId} u shkeput nga timeout.`);
+        socket.end()
     });
+
 
     socket.on('end', () => {
         console.log(`Klienti doli: ${clientId}`);
@@ -112,21 +124,20 @@ const PORT2 = 8080;
 
 http.createServer((req, res) => {
     if (req.url === '/stats') {
-        res.writeHead(200, {'Content-Type': 'application/json'});
+        res.writeHead(200, { 'Content-Type': 'application/json' });
 
         res.end(
             JSON.stringify({
-            activeClients: clients.length,
-            clientIPs: clients.map(c => c.id),
-            totalMessages: messages.length,
-            messages: messages
+                activeClients: clients.length,
+                clientIPs: clients.map(c => c.id),
+                totalMessages: messages.length,
+                messages: messages
             }, null, 2));
-    
     }
     else {
         res.writeHead(404);
         res.end("Not Found");
     }
 }).listen(PORT2, () => {
-    console.log(`HTTP serveri eshte aktiv dhe duke funksionuar ne portin ${PORT2}`);
+    console.log(`HTTP serveri eshte aktiv ne portin ${PORT2}`);
 });

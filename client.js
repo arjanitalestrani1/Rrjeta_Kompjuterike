@@ -6,42 +6,40 @@ const PORT = 5000;
 
 const client = new net.Socket();
 
-// CONNECT
-client.connect(PORT, HOST, () => {
-    console.log('✅ U lidh me serverin');
-    console.log('Shkruaj mesazh ose komandë (/list, /read file.txt, etj)');
-});
-
-// RECEIVE DATA
-client.on('data', (data) => {
-    console.log(`\n📩 Serveri: ${data.toString()}`);
-    rl.prompt();
-});
-
-// CLOSE
-client.on('close', () => {
-    console.log('❌ U shkëpute nga serveri');
-    process.exit();
-});
-
-// ERROR
-client.on('error', (err) => {
-    console.log(`⚠️ Gabim: ${err.message}`);
-});
-
-// READ INPUT
 const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
-    prompt: '👉 '
+    prompt: '> '
 });
 
-rl.prompt();
+client.connect(PORT, HOST, () => {
+    console.log('U lidh me serverin');
+    console.log('Shkruaj mesazh ose komandë (/list, /read file.txt, /delete file.txt, /exit)');
+    rl.prompt();
+});
+
+client.on('data', (data) => {
+    console.log(`\n Serveri: ${data.toString()}`);
+    rl.prompt();
+});
+
+client.on('close', () => {
+    console.log(' U shkëpute nga serveri');
+    process.exit(0);
+});
+
+client.on('error', (err) => {
+    console.log(` Gabim: ${err.message}`);
+});
 
 rl.on('line', (input) => {
     const text = input.trim();
 
-    // EXIT
+    if (!text) {
+        rl.prompt();
+        return;
+    }
+
     if (text === '/exit') {
         console.log('Duke u shkëputur...');
         client.end();
@@ -49,7 +47,6 @@ rl.on('line', (input) => {
         return;
     }
 
-    // SEND TO SERVER
     client.write(text);
 });
 
