@@ -1,8 +1,10 @@
 const net = require('net');
+const http = require('http');
 const commands = require('./fileCommands');
 
 const HOST = '127.0.0.1';
 const PORT = 5000;
+const PORT2 = 8080;
 const MAX_CLIENTS = 4;
 const TIMEOUT = 15000;
 
@@ -15,7 +17,7 @@ const removeClient = (clientId) => {
 
 const server = net.createServer((socket) => {
     const clientId = `${socket.remoteAddress}:${socket.remotePort}`;
-   
+
     if (clients.length >= MAX_CLIENTS) {
         socket.write('Serveri eshte full.\n');
         socket.end();
@@ -57,7 +59,7 @@ const server = net.createServer((socket) => {
             const messageObject = {
                 clientId: clientId,
                 message: text,
-            time: new Date().toLocaleString()
+                time: new Date().toLocaleString()
             };
 
             messages.push(messageObject);
@@ -69,9 +71,9 @@ const server = net.createServer((socket) => {
 
     socket.on('timeout', () => {
         console.log(`Klienti ${clientId} u shkeput nga timeout.`);
-        socket.end()
+        socket.write('Lidhja u mbyll per shkak te mosaktivitetit.\n');
+        socket.end();
     });
-
 
     socket.on('end', () => {
         console.log(`Klienti doli: ${clientId}`);
@@ -92,25 +94,20 @@ server.listen(PORT, HOST, () => {
     console.log(`Serveri eshte duke punu ne ${HOST}:${PORT}`);
 });
 
-const http = require('http');
-const PORT2 = 8080;
-
 http.createServer((req, res) => {
     if (req.url === '/stats') {
-        res.writeHead(200, {'Content-Type': 'application/json'});
+        res.writeHead(200, { 'Content-Type': 'application/json' });
 
-        res.end(
-            JSON.stringify({
+        res.end(JSON.stringify({
             activeClients: clients.length,
             clientIPs: clients.map(c => c.id),
             totalMessages: messages.length,
             messages: messages
-            }, null, 2));
-    }
-    else {
+        }, null, 2));
+    } else {
         res.writeHead(404);
-        res.end("Not Found");
+        res.end('Not Found');
     }
 }).listen(PORT2, () => {
-    console.log(`HTTP serveri eshte aktiv ne portin ${PORT2}`);
+    console.log(`HTTP serveri eshte aktiv dhe duke funksionuar ne portin ${PORT2}`);
 });
