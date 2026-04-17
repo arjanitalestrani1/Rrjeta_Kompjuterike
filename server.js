@@ -16,7 +16,7 @@ const removeClient = (clientId) => {
 const server = net.createServer((socket) => {
     const clientId = `${socket.remoteAddress}:${socket.remotePort}`;
 
-    if (clients.length >= MAX_CLIENTS) {
+    
 if (clients.length >= MAX_CLIENTS) {
         socket.write('Serveri eshte full.\n');
         socket.end();
@@ -92,7 +92,6 @@ else if (cmd === '/read') {
         console.log(`Klienti doli: ${clientId}`);
         removeClient(clientId);
         console.log(`Kliente aktiv: ${clients.length}`);
-< HEAD
     });
 
     socket.on('close', () => {
@@ -107,23 +106,3 @@ else if (cmd === '/read') {
 server.listen(PORT, HOST, () => {
     console.log(`Serveri eshte duke punu ne ${HOST}:${PORT}`);
 });
-=======
-});
-
-    socket.on('close', () => {
-        removeClient(clientId);
-    });
-
-    socket.on('error', (err) => {
-        console.log(`Gabim nga ${clientId}: ${err.message}`);
-    });
-});
-
-server.listen(PORT, HOST, () => {
-    console.log(`Serveri eshte duke punu ne ${HOST}:${PORT}`);
- HEAD
-});
-
-
-
-
