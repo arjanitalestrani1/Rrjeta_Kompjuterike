@@ -1,79 +1,123 @@
-const fs = require("fs");
-const path = require("path");
+const fs = require('fs');
+const path = require('path');
 
-const FILES_DIR = path.join(__dirname, "files");
+const filesDir = path.join(__dirname, 'files');
 
-// LIST FILES
+// nese folderi files nuk ekziston, krijoje
+if (!fs.existsSync(filesDir)) {
+    fs.mkdirSync(filesDir);
+}
+
+// /list
 function listFiles(socket) {
-    fs.readdir(FILES_DIR, (err, files) => {
+    fs.readdir(filesDir, (err, files) => {
         if (err) {
-            socket.write("Gabim gjatë leximit të folderit");
+            socket.write('Gabim gjate leximit te folderit.\n');
             return;
         }
-        socket.write("FILET NË SERVER:\n" + files.join("\n"));
+
+        if (files.length === 0) {
+            socket.write('Nuk ka file ne server.\n');
+            return;
+        }
+
+        socket.write('File ne server:\n' + files.join('\n') + '\n');
     });
 }
 
-// READ FILE
+// /read filename
 function readFile(socket, filename) {
-    const filePath = path.join(FILES_DIR, filename);
+    const filePath = path.join(filesDir, filename);
 
-    fs.readFile(filePath, "utf8", (err, data) => {
+    fs.readFile(filePath, 'utf8', (err, data) => {
         if (err) {
-            socket.write("File nuk u gjet");
+            socket.write('File nuk u gjet ose nuk mund te lexohet.\n');
             return;
         }
-        socket.write("PËRMBAJTJA E FILE-IT:\n" + data);
+
+        socket.write(`Permbajtja e file-it ${filename}:\n${data}\n`);
     });
 }
 
-// DELETE FILE
+// /delete filename
 function deleteFile(socket, filename) {
-    const filePath = path.join(FILES_DIR, filename);
+    const filePath = path.join(filesDir, filename);
 
     fs.unlink(filePath, (err) => {
         if (err) {
-            socket.write("Gabim gjatë fshirjes së file-it");
+            socket.write('File nuk u gjet ose nuk mund te fshihet.\n');
             return;
         }
-        socket.write("File u fshi me sukses");
+
+        socket.write(`File ${filename} u fshi me sukses.\n`);
     });
 }
 
-// FILE INFO
+// /search keyword
+function searchFiles(socket, keyword) {
+    fs.readdir(filesDir, (err, files) => {
+        if (err) {
+            socket.write('Gabim gjate kerkimit.\n');
+            return;
+        }
+
+        const matches = files.filter(file =>
+            file.toLowerCase().includes(keyword.toLowerCase())
+        );
+
+        if (matches.length === 0) {
+            socket.write(`Asnje file nuk u gjet per fjalen kyce: ${keyword}\n`);
+            return;
+        }
+
+        socket.write(`File te gjetura:\n${matches.join('\n')}\n`);
+    });
+}
+
+// /info filename
 function fileInfo(socket, filename) {
-    const filePath = path.join(FILES_DIR, filename);
+    const filePath = path.join(filesDir, filename);
 
     fs.stat(filePath, (err, stats) => {
         if (err) {
-            socket.write("File nuk u gjet");
+            socket.write('File nuk u gjet.\n');
             return;
         }
 
         socket.write(
-            `INFORMACIONI I FILE-IT:
-Madhësia: ${stats.size} bytes
-Krijuar: ${stats.birthtime}
-Modifikuar: ${stats.mtime}`
+            `Informacion per ${filename}:\n` +
+            `Madhesia: ${stats.size} bytes\n` +
+            `Krijuar: ${stats.birthtime}\n` +
+            `Modifikuar: ${stats.mtime}\n`
         );
     });
 }
 
-// SEARCH FILES
-function searchFile(socket, keyword) {
-    fs.readdir(FILES_DIR, (err, files) => {
+// /download filename
+function downloadFile(socket, filename) {
+    const filePath = path.join(filesDir, filename);
+
+    fs.readFile(filePath, 'utf8', (err, data) => {
         if (err) {
-            socket.write("Gabim gjatë leximit të folderit");
+            socket.write('File nuk u gjet per download.\n');
             return;
         }
 
-        const result = files.filter(file => file.includes(keyword));
+        socket.write(`DOWNLOAD ${filename}\n${data}\n`);
+    });
+}
 
-        if (result.length === 0) {
-            socket.write("Nuk u gjet asnjë file me këtë fjalë");
-        } else {
-            socket.write("REZULTATET E KËRKIMIT:\n" + result.join("\n"));
+// /upload filename content
+function uploadFile(socket, filename, content) {
+    const filePath = path.join(filesDir, filename);
+
+    fs.writeFile(filePath, content, (err) => {
+        if (err) {
+            socket.write('Gabim gjate upload-it te file-it.\n');
+            return;
         }
+
+        socket.write(`File ${filename} u ngarkua me sukses.\n`);
     });
 }
 
@@ -81,7 +125,8 @@ module.exports = {
     listFiles,
     readFile,
     deleteFile,
+    searchFiles,
     fileInfo,
-    searchFile
+    downloadFile,
+    uploadFile 
 };
-
