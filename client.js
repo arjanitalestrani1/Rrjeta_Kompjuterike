@@ -1,10 +1,9 @@
-
 const net = require('net');
 const readline = require('readline');
 const fs = require('fs');
 const path = require('path');
 
-const HOST = '127.0.0.1';
+let HOST; 
 const PORT = 5000;
 
 let client;
@@ -16,6 +15,13 @@ const rl = readline.createInterface({
     prompt: '> '
 });
 
+// ================= ASK FOR SERVER IP  =================
+rl.question('Shkruaj IP e serverit (ENTER per localhost): ', (ip) => {
+    HOST = ip || '127.0.0.1';
+    connectToServer();
+});
+
+// ================= CONNECT FUNCTION =================
 function connectToServer() {
     if (client) {
         client.removeAllListeners();
@@ -25,7 +31,7 @@ function connectToServer() {
     client = new net.Socket();
 
     client.connect(PORT, HOST, () => {
-        console.log('U lidh me serverin');
+        console.log(`U lidh me serverin (${HOST}:${PORT})`);
         console.log('Shkruaj mesazh ose komandë (/list, /read emri, /delete emri, /upload emri, /download emri, /search fjalë, /info emri, /exit)');
         rl.prompt();
     });
@@ -33,7 +39,7 @@ function connectToServer() {
     client.on('data', (data) => {
         const text = data.toString();
 
-        // ================= DOWNLOAD  =================
+        // ================= DOWNLOAD =================
         if (text.startsWith('DOWNLOAD ')) {
             const lines = text.split('\n');
             const header = lines[0].split(' ');
@@ -59,7 +65,7 @@ function connectToServer() {
 
     client.on('close', () => {
         if (shouldReconnect) {
-            console.log('\n U shkëpute nga serveri. Po provohet rilidhja automatike (Auto-recovery) pas 3 sekondave...');
+            console.log('\n U shkëpute nga serveri. Po provohet rilidhja automatike pas 3 sekondave...');
             setTimeout(connectToServer, 3000);
         } else {
             console.log(' Klienti u mbyll.');
@@ -72,9 +78,7 @@ function connectToServer() {
     });
 }
 
-// ================= START =================
-connectToServer();
-
+// ================= USER INPUT =================
 rl.on('line', (input) => {
     const text = input.trim();
 
@@ -107,12 +111,10 @@ rl.on('line', (input) => {
 
         const filePath = path.join(__dirname, filename);
 
-        
         if (fs.existsSync(filePath)) {
             const content = fs.readFileSync(filePath, 'utf8');
             client.write(`/upload ${filename} ${content}`);
-        } 
-        else {
+        } else {
             client.write(`/upload ${filename}`);
         }
 
