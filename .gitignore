@@ -1,1 +1,14 @@
 message.log
+# Logs
+message.log
+*.log
+
+# Node modules 
+node_modules/
+
+# Environment files
+.env
+
+# OS files
+.DS_Store
+Thumbs.db
