@@ -1,3 +1,4 @@
+
 const net = require('net');
 const readline = require('readline');
 const fs = require('fs');
@@ -20,8 +21,9 @@ function connectToServer() {
         client.removeAllListeners();
         client.destroy();
     }
+
     client = new net.Socket();
-    
+
     client.connect(PORT, HOST, () => {
         console.log('U lidh me serverin');
         console.log('Shkruaj mesazh ose komandë (/list, /read emri, /delete emri, /upload emri, /download emri, /search fjalë, /info emri, /exit)');
@@ -30,18 +32,22 @@ function connectToServer() {
 
     client.on('data', (data) => {
         const text = data.toString();
-        
-        // Handle download response saving
+
+        // ================= DOWNLOAD  =================
         if (text.startsWith('DOWNLOAD ')) {
             const lines = text.split('\n');
             const header = lines[0].split(' ');
             const filename = header[1];
             const content = lines.slice(1).join('\n');
-            
+
             const downloadsDir = path.join(__dirname, 'client_downloads');
             if (!fs.existsSync(downloadsDir)) fs.mkdirSync(downloadsDir);
-            
-            fs.writeFileSync(path.join(downloadsDir, filename), content.replace(/\n$/, ''));
+
+            fs.writeFileSync(
+                path.join(downloadsDir, filename),
+                content.replace(/\n$/, '')
+            );
+
             console.log(`\n[Klienti] File ${filename} u shkarkua me sukses ne folderin "client_downloads".`);
             rl.prompt();
             return;
@@ -66,7 +72,7 @@ function connectToServer() {
     });
 }
 
-// Start connection
+// ================= START =================
 connectToServer();
 
 rl.on('line', (input) => {
@@ -80,6 +86,7 @@ rl.on('line', (input) => {
     const args = text.split(' ');
     const cmd = args[0];
 
+    // ================= EXIT =================
     if (cmd === '/exit') {
         console.log('Duke u shkëputur...');
         shouldReconnect = false;
@@ -88,19 +95,31 @@ rl.on('line', (input) => {
         return;
     }
 
-    if (cmd === '/upload' && args.length === 2) {
+    // ================= UPLOAD =================
+    if (cmd === '/upload') {
         const filename = args[1];
+
+        if (!filename) {
+            console.log('\n[Klienti] Perdorimi: /upload <filename>');
+            rl.prompt();
+            return;
+        }
+
         const filePath = path.join(__dirname, filename);
+
+        
         if (fs.existsSync(filePath)) {
             const content = fs.readFileSync(filePath, 'utf8');
             client.write(`/upload ${filename} ${content}`);
-        } else {
-            console.log(`\n[Klienti] File lokal nuk ekziston për tu ngarkuar me emrin: ${filename}`);
-            rl.prompt();
+        } 
+        else {
+            client.write(`/upload ${filename}`);
         }
+
         return;
     }
 
+    // ================= NORMAL SEND =================
     if (client && !client.destroyed) {
         client.write(text);
     } else {
