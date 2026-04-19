@@ -1,5 +1,5 @@
 const net = require('net');
-const fs = require('fs'); 
+const fs = require('fs');
 const commands = require('./fileCommands');
 
 const HOST = '0.0.0.0';
@@ -19,12 +19,14 @@ const server = net.createServer((socket) => {
     const ip = socket.remoteAddress;
     const clientId = `${ip}:${socket.remotePort}`;
 
+    // MAX CLIENTS CHECK
     if (clients.length >= MAX_CLIENTS) {
         socket.write('Serveri eshte full.\n');
         socket.end();
         return;
     }
 
+    // ROLE ASSIGNMENT
     let role = 'user';
     if (!knownIPs[ip]) {
         const adminExists = Object.values(knownIPs).includes('admin');
@@ -43,11 +45,11 @@ const server = net.createServer((socket) => {
 
     clients.push(clientObj);
 
-    console.log(`Klienti u lidh: ${clientId} (${role})`);
+    console.log(`Klienti u lidh: ${clientId} (${clientObj.role})`);
     console.log(`Kliente aktiv: ${clients.length}`);
 
-    if (role === 'admin') {
-        socket.write("Miresevini! Ju jeni ADMIN (read, write, execute).\n");
+    if (clientObj.role === 'admin') {
+        socket.write("Miresevini! Ju jeni ADMIN (full access).\n");
     } else {
         socket.write("Miresevini! Ju jeni USER (vetem /read lejohet).\n");
     }
@@ -58,9 +60,13 @@ const server = net.createServer((socket) => {
         const text = data.toString().trim();
         const [cmd, ...args] = text.split(' ');
 
+        // ================= COMMANDS =================
         if (['/list', '/read', '/delete', '/info', '/search', '/download', '/upload'].includes(cmd)) {
 
-            // PERMISSION CHECK
+            // LOG COMMAND
+            console.log(`Komande nga ${clientId} (${clientObj.role}): ${text}`);
+
+            // PERMISSIONS
             if (clientObj.role !== 'admin' && cmd !== '/read') {
                 socket.write("Refuzuar: Keni vetem akses read (/read).\n");
                 return;
@@ -113,6 +119,8 @@ const server = net.createServer((socket) => {
                 }
             }
         }
+
+        // ================= NORMAL MESSAGES =================
         else {
             const messageObject = {
                 clientId,
@@ -122,13 +130,15 @@ const server = net.createServer((socket) => {
 
             messages.push(messageObject);
 
-          
+            // SAVE TO FILE
             fs.appendFileSync(
-                'message.log',
-                `[${messageObject.time}] ${messageObject.clientId}: ${messageObject.message}\n`
+                'logs/message.log',
+                `[${messageObject.time}] (${clientObj.role}) ${clientObj.ip}:${socket.remotePort}: ${messageObject.message}\n`
             );
 
-            console.log(`Mesazh nga ${clientId}: ${text}`);
+            // LOG MESSAGE 
+            console.log(`Mesazh nga ${clientId} (${clientObj.role}): ${text}`);
+
             socket.write(`Serveri e pranoi mesazhin: ${text}\n`);
         }
     });
@@ -156,9 +166,7 @@ server.listen(PORT, HOST, () => {
 });
 
 
-// ===============================
-// HTTP SERVER 
-// ===============================
+// ================= HTTP SERVER =================
 
 const http = require('http');
 const PORT2 = 8080;
