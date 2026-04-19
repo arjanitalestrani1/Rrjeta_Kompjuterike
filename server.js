@@ -126,11 +126,11 @@ const server = net.createServer((socket) => {
                 else commands.downloadFile(socketProxy, args[0]);
             }
             else if (cmd === '/upload') {
-                if (args.length < 2) {
-                    socketProxy.write('Perdorimi: /upload <file> <content>\n');
+                if (!args[0]) {
+                    socketProxy.write('Perdorimi: /upload <filename>\n');
                 } else {
                     const filename = args[0];
-                    const content = args.slice(1).join(' ');
+                    const content = args.slice(1).join(' ') || '';
                     commands.uploadFile(socketProxy, filename, content);
                 }
             }
