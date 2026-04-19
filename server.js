@@ -1,19 +1,24 @@
 const net = require('net');
 const fs = require('fs');
+const http = require('http');
 const commands = require('./fileCommands');
 
 const HOST = '0.0.0.0';
 const PORT = 5000;
+const PORT2 = 8080;
 const MAX_CLIENTS = 10;
-const TIMEOUT = 15000;
+const TIMEOUT = 60000;
 
 let clients = [];
 let messages = [];
+const startTime = new Date();
 
+// ================= REMOVE CLIENT =================
 const removeClient = (clientId) => {
     clients = clients.filter(c => c.id !== clientId);
 };
 
+// ================= TCP SERVER =================
 const server = net.createServer((socket) => {
     const ip = socket.remoteAddress;
     const clientId = `${ip}:${socket.remotePort}`;
@@ -28,7 +33,7 @@ const server = net.createServer((socket) => {
         id: clientId,
         ip,
         role: 'user',
-        loginStep: null, // 🔥 for password flow
+        loginStep: null,
         connectedAt: new Date()
     };
 
@@ -46,35 +51,29 @@ const server = net.createServer((socket) => {
         const text = data.toString().trim();
         const [cmd, ...args] = text.split(' ');
 
-        // ================= PASSWORD STEP =================
+        // ================= PASSWORD =================
         if (clientObj.loginStep === 'awaitingPassword') {
-
             if (text === '1234') {
                 clientObj.role = 'admin';
                 socket.write("U kyçët si ADMIN.\n");
             } else {
                 socket.write("Password gabim.\n");
             }
-
             clientObj.loginStep = null;
             return;
         }
 
         // ================= LOGIN =================
         if (cmd === '/login') {
-
             if (args[0] === 'admin') {
                 socket.write("Shkruani password:\n");
                 clientObj.loginStep = 'awaitingPassword';
-            } 
-            else if (args[0] === 'user') {
+            } else if (args[0] === 'user') {
                 clientObj.role = 'user';
                 socket.write("U kyçët si USER.\n");
-            } 
-            else {
+            } else {
                 socket.write("Perdorimi: /login admin ose /login user\n");
             }
-
             return;
         }
 
@@ -82,6 +81,14 @@ const server = net.createServer((socket) => {
         if (['/list', '/read', '/delete', '/info', '/search', '/download', '/upload'].includes(cmd)) {
 
             console.log(`Komande nga ${clientId} (${clientObj.role}): ${text}`);
+
+            messages.push({
+                clientId,
+                role: clientObj.role,
+                type: 'command',
+                message: text,
+                time: new Date().toLocaleString()
+            });
 
             if (clientObj.role !== 'admin' && cmd !== '/read') {
                 socket.write("Refuzuar: Keni vetem akses read (/read).\n");
@@ -102,9 +109,7 @@ const server = net.createServer((socket) => {
                 write: (msg) => respond(msg)
             };
 
-            if (cmd === '/list') {
-                commands.listFiles(socketProxy);
-            }
+            if (cmd === '/list') commands.listFiles(socketProxy);
             else if (cmd === '/read') {
                 if (!args[0]) socketProxy.write('Perdorimi: /read emriFile\n');
                 else commands.readFile(socketProxy, args[0]);
@@ -136,10 +141,12 @@ const server = net.createServer((socket) => {
             }
         }
 
-        // ================= MESSAGES =================
+        // ================= NORMAL MESSAGES =================
         else {
             const messageObject = {
                 clientId,
+                role: clientObj.role,
+                type: 'message',
                 message: text,
                 time: new Date().toLocaleString()
             };
@@ -162,37 +169,27 @@ const server = net.createServer((socket) => {
         socket.end();
     });
 
-    socket.on('end', () => {
-        removeClient(clientId);
-    });
-
-    socket.on('close', () => {
-        removeClient(clientId);
-    });
-
-    socket.on('error', (err) => {
-        console.log(`Gabim: ${err.message}`);
-    });
+    socket.on('end', () => removeClient(clientId));
+    socket.on('close', () => removeClient(clientId));
+    socket.on('error', (err) => console.log(`Gabim: ${err.message}`));
 });
 
 server.listen(PORT, HOST, () => {
-    console.log(`Server running on ${HOST}:${PORT}`);
+    console.log(`TCP server running on ${HOST}:${PORT}`);
 });
 
-
 // ================= HTTP SERVER =================
-
-const http = require('http');
-const PORT2 = 8080;
-
 http.createServer((req, res) => {
     if (req.url === '/stats') {
         res.writeHead(200, { 'Content-Type': 'application/json' });
 
         res.end(JSON.stringify({
             activeClients: clients.length,
+            maxClients: MAX_CLIENTS,
             clientIPs: clients.map(c => c.ip),
+            roles: clients.map(c => ({ ip: c.ip, role: c.role })),
             totalMessages: messages.length,
+            uptime: `${Math.floor((Date.now() - startTime) / 1000)} seconds`,
             messages
         }, null, 2));
     } else {
