@@ -1,7 +1,8 @@
 const net = require('net');
+const fs = require('fs'); 
 const commands = require('./fileCommands');
 
-const HOST = '127.0.0.1';
+const HOST = '0.0.0.0';
 const PORT = 5000;
 const MAX_CLIENTS = 10;
 const TIMEOUT = 15000;
@@ -59,7 +60,7 @@ const server = net.createServer((socket) => {
 
         if (['/list', '/read', '/delete', '/info', '/search', '/download', '/upload'].includes(cmd)) {
 
-            // STRICT PERMISSION
+            // PERMISSION CHECK
             if (clientObj.role !== 'admin' && cmd !== '/read') {
                 socket.write("Refuzuar: Keni vetem akses read (/read).\n");
                 return;
@@ -121,6 +122,12 @@ const server = net.createServer((socket) => {
 
             messages.push(messageObject);
 
+          
+            fs.appendFileSync(
+                'message.log',
+                `[${messageObject.time}] ${messageObject.clientId}: ${messageObject.message}\n`
+            );
+
             console.log(`Mesazh nga ${clientId}: ${text}`);
             socket.write(`Serveri e pranoi mesazhin: ${text}\n`);
         }
@@ -149,7 +156,10 @@ server.listen(PORT, HOST, () => {
 });
 
 
-// HTTP SERVER
+// ===============================
+// HTTP SERVER 
+// ===============================
+
 const http = require('http');
 const PORT2 = 8080;
 
