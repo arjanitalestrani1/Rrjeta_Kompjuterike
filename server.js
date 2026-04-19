@@ -9,7 +9,6 @@ const TIMEOUT = 15000;
 
 let clients = [];
 let messages = [];
-const knownIPs = {};
 
 const removeClient = (clientId) => {
     clients = clients.filter(c => c.id !== clientId);
@@ -19,27 +18,17 @@ const server = net.createServer((socket) => {
     const ip = socket.remoteAddress;
     const clientId = `${ip}:${socket.remotePort}`;
 
-    // MAX CLIENTS CHECK
     if (clients.length >= MAX_CLIENTS) {
         socket.write('Serveri eshte full.\n');
         socket.end();
         return;
     }
 
-    // ROLE ASSIGNMENT
-    let role = 'user';
-    if (!knownIPs[ip]) {
-        const adminExists = Object.values(knownIPs).includes('admin');
-        if (!adminExists) role = 'admin';
-        knownIPs[ip] = role;
-    } else {
-        role = knownIPs[ip];
-    }
-
     const clientObj = {
         id: clientId,
         ip,
-        role,
+        role: 'user',
+        loginStep: null, // 🔥 for password flow
         connectedAt: new Date()
     };
 
@@ -48,11 +37,8 @@ const server = net.createServer((socket) => {
     console.log(`Klienti u lidh: ${clientId} (${clientObj.role})`);
     console.log(`Kliente aktiv: ${clients.length}`);
 
-    if (clientObj.role === 'admin') {
-        socket.write("Miresevini! Ju jeni ADMIN (full access).\n");
-    } else {
-        socket.write("Miresevini! Ju jeni USER (vetem /read lejohet).\n");
-    }
+    socket.write("Miresevini!\n");
+    socket.write("Per login: /login admin ose /login user\n");
 
     socket.setTimeout(TIMEOUT);
 
@@ -60,13 +46,43 @@ const server = net.createServer((socket) => {
         const text = data.toString().trim();
         const [cmd, ...args] = text.split(' ');
 
+        // ================= PASSWORD STEP =================
+        if (clientObj.loginStep === 'awaitingPassword') {
+
+            if (text === '1234') {
+                clientObj.role = 'admin';
+                socket.write("U kyçët si ADMIN.\n");
+            } else {
+                socket.write("Password gabim.\n");
+            }
+
+            clientObj.loginStep = null;
+            return;
+        }
+
+        // ================= LOGIN =================
+        if (cmd === '/login') {
+
+            if (args[0] === 'admin') {
+                socket.write("Shkruani password:\n");
+                clientObj.loginStep = 'awaitingPassword';
+            } 
+            else if (args[0] === 'user') {
+                clientObj.role = 'user';
+                socket.write("U kyçët si USER.\n");
+            } 
+            else {
+                socket.write("Perdorimi: /login admin ose /login user\n");
+            }
+
+            return;
+        }
+
         // ================= COMMANDS =================
         if (['/list', '/read', '/delete', '/info', '/search', '/download', '/upload'].includes(cmd)) {
 
-            // LOG COMMAND
             console.log(`Komande nga ${clientId} (${clientObj.role}): ${text}`);
 
-            // PERMISSIONS
             if (clientObj.role !== 'admin' && cmd !== '/read') {
                 socket.write("Refuzuar: Keni vetem akses read (/read).\n");
                 return;
@@ -120,7 +136,7 @@ const server = net.createServer((socket) => {
             }
         }
 
-        // ================= NORMAL MESSAGES =================
+        // ================= MESSAGES =================
         else {
             const messageObject = {
                 clientId,
@@ -130,13 +146,11 @@ const server = net.createServer((socket) => {
 
             messages.push(messageObject);
 
-            // SAVE TO FILE
             fs.appendFileSync(
                 'logs/message.log',
                 `[${messageObject.time}] (${clientObj.role}) ${clientObj.ip}:${socket.remotePort}: ${messageObject.message}\n`
             );
 
-            // LOG MESSAGE 
             console.log(`Mesazh nga ${clientId} (${clientObj.role}): ${text}`);
 
             socket.write(`Serveri e pranoi mesazhin: ${text}\n`);
